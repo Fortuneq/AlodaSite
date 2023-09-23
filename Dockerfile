@@ -1,17 +1,13 @@
-FROMFROM node:10-alpine
+# этап сборки (build stage)
+FROM node:lts-alpine as build-stage
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
 
-    RUN mkdir -p /home/node/app/node_modules && chown -R node:node /home/node/app
-
-    WORKDIR /home/node/app
-
-    COPY package*.json ./
-
-    USER node
-
-    RUN npm install
-
-    COPY --chown=node:node . .
-
-    EXPOSE 8080
-
-    CMD [ "node", "app.js" ]
+# этап production (production-stage)
+FROM nginx:stable-alpine as production-stage
+COPY --from=build-stage /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]
